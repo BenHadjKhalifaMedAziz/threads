@@ -25,4 +25,10 @@ class UserService {
     }
     return null;
   }
+
+  // Fetch a username by user ID
+  Future<String?> fetchUsernameById(String userId) async {
+    User? user = await fetchUserById(userId);
+    return user?.name; // Return the username if the user exists, else return null
+  }
 }
