@@ -27,6 +27,9 @@ class _ThreadsMainPageState extends State<ThreadsMainPage> {
   final UserService _userService = UserService();
   List<Map<String, dynamic>> _threadsWithUsers = [];
 
+  // New variable to track the selected section
+  bool _showMyThreads = false;
+
   @override
   void initState() {
     super.initState();
@@ -83,6 +86,11 @@ class _ThreadsMainPageState extends State<ThreadsMainPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Filter threads based on the selected section
+    final filteredThreads = _showMyThreads
+        ? _threadsWithUsers.where((threadData) => threadData['thread'].userId == widget.userId).toList()
+        : _threadsWithUsers;
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Welcome ${widget.username} (${widget.role})'),
@@ -97,26 +105,51 @@ class _ThreadsMainPageState extends State<ThreadsMainPage> {
           ),
         ],
       ),
-      body: _threadsWithUsers.isEmpty
-          ? const Center(child: CircularProgressIndicator())
-          : ListView.builder(
-        itemCount: _threadsWithUsers.length,
-        itemBuilder: (context, index) {
-          final threadData = _threadsWithUsers[index];
-          final Thread thread = threadData['thread'];
-          final User? user = threadData['user'];
-
-          return ListTile(
-            title: Text(thread.title),
-            subtitle: Text('Created by: ${user?.name ?? "Unknown"} (${user?.role ?? "No Role"})'),
-            trailing: Text('${thread.nbLikes} Likes'),
-            onTap: () {
-              if (user != null) {
-                _viewThreadDetails(thread, user); // Open details page if user is not null
-              }
+      body: Column(
+        children: [
+          // Toggle button for switching between All Threads and My Threads
+          ToggleButtons(
+            isSelected: [_showMyThreads, !_showMyThreads],
+            onPressed: (index) {
+              setState(() {
+                _showMyThreads = index == 0; // If index is 0, show My Threads
+              });
             },
-          );
-        },
+            children: const [
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16.0),
+                child: Text('My Threads'),
+              ),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16.0),
+                child: Text('All Threads'),
+              ),
+            ],
+          ),
+          Expanded(
+            child: filteredThreads.isEmpty
+                ? const Center(child: CircularProgressIndicator())
+                : ListView.builder(
+              itemCount: filteredThreads.length,
+              itemBuilder: (context, index) {
+                final threadData = filteredThreads[index];
+                final Thread thread = threadData['thread'];
+                final User? user = threadData['user'];
+
+                return ListTile(
+                  title: Text(thread.title),
+                  subtitle: Text('Created by: ${user?.name ?? "Unknown"} (${user?.role ?? "No Role"})'),
+                  trailing: Text('${thread.nbLikes} Likes'),
+                  onTap: () {
+                    if (user != null) {
+                      _viewThreadDetails(thread, user); // Open details page if user is not null
+                    }
+                  },
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
