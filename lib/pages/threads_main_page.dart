@@ -4,7 +4,8 @@ import 'package:threads/services/user_service.dart';
 import 'package:threads/model/thread.dart';
 import 'package:threads/model/user.dart';
 import 'create_thread_page.dart';
-import 'thread_detail_page.dart'; // Import the new page
+import 'thread_detail_page.dart'; // Existing detail page
+import 'edit_thread_page.dart'; // New edit page
 
 class ThreadsMainPage extends StatefulWidget {
   final String username;
@@ -70,18 +71,34 @@ class _ThreadsMainPageState extends State<ThreadsMainPage> {
     }
   }
 
-  void _viewThreadDetails(Thread thread, User user) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ThreadDetailPage(
-          thread: thread,
-          username: widget.username, // Pass connected user's username
-          role: widget.role,         // Pass connected user's role
-          userId: widget.userId,     // Pass connected user's ID
+  void _viewThreadDetails(Thread thread, User user) async {
+    if (_showMyThreads) {
+      // If viewing "My Threads", navigate to EditThreadPage
+      final result = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => EditThreadPage(thread: thread),
         ),
-      ),
-    );
+      );
+
+      // If the result is true, reload threads
+      if (result == true) {
+        _loadThreads();
+      }
+    } else {
+      // If viewing "All Threads", navigate to ThreadDetailPage
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ThreadDetailPage(
+            thread: thread,
+            username: widget.username, // Pass connected user's username
+            role: widget.role,         // Pass connected user's role
+            userId: widget.userId,     // Pass connected user's ID
+          ),
+        ),
+      );
+    }
   }
 
   @override
@@ -142,7 +159,7 @@ class _ThreadsMainPageState extends State<ThreadsMainPage> {
                   trailing: Text('${thread.nbLikes} Likes'),
                   onTap: () {
                     if (user != null) {
-                      _viewThreadDetails(thread, user); // Open details page if user is not null
+                      _viewThreadDetails(thread, user); // Pass user for detail view
                     }
                   },
                 );

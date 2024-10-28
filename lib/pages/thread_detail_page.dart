@@ -41,7 +41,6 @@ class _ThreadDetailPageState extends State<ThreadDetailPage> {
     _loadComments(); // Load comments when the page initializes
   }
 
-  // Update the _loadComments method in ThreadDetailPage
   Future<void> _loadComments() async {
     List<Comment> comments = await _commentService.getCommentsForThread(_thread.id, widget.userId);
     _comments = comments;
@@ -114,6 +113,10 @@ class _ThreadDetailPageState extends State<ThreadDetailPage> {
     }
   }
 
+  Future<String?> _fetchUsernameById(String userId) async {
+    return await _userService.fetchUsernameById(userId);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -125,7 +128,17 @@ class _ThreadDetailPageState extends State<ThreadDetailPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Created by: ${_usernames[_thread.userId] ?? _thread.userId}'), // Display creator's username
+            FutureBuilder<String?>(
+              future: _fetchUsernameById(_thread.userId),
+              builder: (context, snapshot) {
+                String creatorUsername = snapshot.connectionState == ConnectionState.waiting
+                    ? 'Loading...' // Show loading indicator
+                    : snapshot.hasData
+                    ? snapshot.data!
+                    : _thread.userId; // Fallback to userId if username not found
+                return Text('Created by: $creatorUsername'); // Display creator's username
+              },
+            ),
             const SizedBox(height: 10),
             Text(_thread.text),
             const SizedBox(height: 10),

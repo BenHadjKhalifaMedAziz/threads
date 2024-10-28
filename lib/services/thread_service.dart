@@ -14,7 +14,7 @@ class ThreadService {
       DocumentReference docRef = await _firestore.collection(collection).add(thread.toMap());
       await docRef.update({'id': docRef.id});
     } catch (e) {
-      print("Error creating thread: $e");
+     // print("Error creating thread: $e");
     }
   }
 
@@ -26,26 +26,47 @@ class ThreadService {
         return Thread.fromMap(doc.data() as Map<String, dynamic>, id);
       }
     } catch (e) {
-      print("Error getting thread: $e");
+    //  print("Error getting thread: $e");
     }
     return null;
   }
 
   // Update an existing thread
-  Future<void> updateThread(Thread thread) async {
+  // Update an existing thread
+  Future<void> updateThread(String threadId, String newImageLink) async {
     try {
-      await _firestore.collection(collection).doc(thread.id).update(thread.toMap());
+      // Get the document reference
+      DocumentReference threadDoc = _firestore.collection(collection).doc(threadId);
+
+      await _firestore.runTransaction((transaction) async {
+        DocumentSnapshot snapshot = await transaction.get(threadDoc);
+        if (!snapshot.exists) return;
+
+        // Deserialize the thread from Firestore
+        Thread thread = Thread.fromMap(snapshot.data() as Map<String, dynamic>, snapshot.id);
+
+        // Clear the existing images and set the new image link
+        List<String> updatedImages = [newImageLink]; // Create a new list with the new image
+
+        // Update the thread document in Firestore with the new image list
+        transaction.update(threadDoc, {
+          'images': updatedImages,
+          'nbLikes': thread.nbLikes, // Keep other fields unchanged
+          'likedUsers': thread.likedUsers, // Keep other fields unchanged
+        });
+      });
     } catch (e) {
-      print("Error updating thread: $e");
+      // print("Error updating thread: $e");
     }
   }
+
 
   // Delete a thread by ID
   Future<void> deleteThread(String id) async {
     try {
       await _firestore.collection(collection).doc(id).delete();
     } catch (e) {
-      print("Error deleting thread: $e");
+    //  print("Error deleting thread: $e");
     }
   }
 
@@ -65,16 +86,15 @@ class ThreadService {
         if (user != null) {
           threadsWithUsers.add({'thread': thread, 'user': user}); // Combine thread and user data
         } else {
-          print("User not found for thread ID: ${thread.id}, userId: ${thread.userId}");
+         // print("User not found for thread ID: ${thread.id}, userId: ${thread.userId}");
           threadsWithUsers.add({'thread': thread, 'user': null}); // Add thread with null user
         }
       }
     } catch (e) {
-      print("Error getting threads with users: $e");
+    //  print("Error getting threads with users: $e");
     }
     return threadsWithUsers;
   }
-
 
   Future<void> toggleLike(String threadId, String userId) async {
     DocumentReference threadDoc = _firestore.collection(collection).doc(threadId);
@@ -108,8 +128,4 @@ class ThreadService {
       });
     });
   }
-
-
-
-
 }
