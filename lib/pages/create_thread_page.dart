@@ -33,11 +33,10 @@ class _CreateThreadPageState extends State<CreateThreadPage> {
       );
 
       await _threadService.createThread(newThread);
-      Navigator.pop(context); // Go back after creating the thread
+      Navigator.pop(context, true); // Return true to indicate a thread was created
     } else {
-      // Show error if fields are empty
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Please fill in all fields.')),
+        const SnackBar(content: Text('Please fill in all fields.')),
       );
     }
   }
@@ -52,15 +51,15 @@ class _CreateThreadPageState extends State<CreateThreadPage> {
           children: [
             TextField(
               controller: _titleController,
-              decoration: InputDecoration(labelText: 'Title'),
+              decoration: const InputDecoration(labelText: 'Title'),
             ),
             TextField(
               controller: _textController,
-              decoration: InputDecoration(labelText: 'Text'),
+              decoration: const InputDecoration(labelText: 'Text'),
             ),
             TextField(
               controller: _imagesController,
-              decoration: InputDecoration(labelText: 'Image URLs (comma separated)'),
+              decoration: const InputDecoration(labelText: 'Image URLs (comma separated)'),
             ),
             const SizedBox(height: 20),
             ElevatedButton(

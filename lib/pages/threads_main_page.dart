@@ -3,18 +3,18 @@ import 'package:threads/services/thread_service.dart';
 import 'package:threads/services/user_service.dart';
 import 'package:threads/model/thread.dart';
 import 'package:threads/model/user.dart';
-import 'create_thread_page.dart'; // Import the CreateThreadPage
+import 'create_thread_page.dart';
 
 class ThreadsMainPage extends StatefulWidget {
   final String username;
   final String role;
-  final String userId; // Add userId field
+  final String userId;
 
   const ThreadsMainPage({
     Key? key,
     required this.username,
     required this.role,
-    required this.userId, // Update constructor to accept userId
+    required this.userId,
   }) : super(key: key);
 
   @override
@@ -32,45 +32,44 @@ class _ThreadsMainPageState extends State<ThreadsMainPage> {
     _loadThreads();
   }
 
-  // Load threads with user information
   Future<void> _loadThreads() async {
     List<Map<String, dynamic>> threads = await _threadService.getAllThreadsWithUser();
 
+    _threadsWithUsers.clear(); // Clear the current list before adding updated threads
     for (var threadData in threads) {
       Thread thread = threadData['thread'];
-      // Fetch user information based on userId
       User? user = await _userService.fetchUserById(thread.userId);
 
-      // Log user information for debugging
       if (user != null) {
         print('Found User: ${user.name}, Role: ${user.role}');
       } else {
         print('User not found for ID: ${thread.userId}');
       }
 
-      // Add thread and user to the list
       _threadsWithUsers.add({
         'thread': thread,
         'user': user,
       });
     }
 
-    setState(() {});
+    setState(() {}); // Trigger a rebuild with the updated threads
   }
 
-  // Navigate back to the login page
   void _disconnect() {
     Navigator.pop(context);
   }
 
-  // Navigate to CreateThreadPage
-  void _createThread() {
-    Navigator.push(
+  void _createThread() async {
+    final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => CreateThreadPage(userId: widget.userId), // Pass userId to CreateThreadPage
+        builder: (context) => CreateThreadPage(userId: widget.userId),
       ),
     );
+
+    if (result == true) {
+      _loadThreads(); // Reload threads if a new thread was added
+    }
   }
 
   @override
@@ -84,7 +83,7 @@ class _ThreadsMainPageState extends State<ThreadsMainPage> {
             onPressed: _disconnect,
           ),
           IconButton(
-            icon: const Icon(Icons.add), // Button to create a thread
+            icon: const Icon(Icons.add),
             onPressed: _createThread,
           ),
         ],
@@ -103,7 +102,7 @@ class _ThreadsMainPageState extends State<ThreadsMainPage> {
             subtitle: Text('Created by: ${user?.name ?? "Unknown"} (${user?.role ?? "No Role"})'),
             trailing: Text('${thread.nbLikes} Likes'),
             onTap: () {
-              // Optionally handle tap events for each thread
+              // Handle tap events for each thread, if needed
             },
           );
         },
