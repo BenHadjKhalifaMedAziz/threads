@@ -41,8 +41,9 @@ class _ThreadDetailPageState extends State<ThreadDetailPage> {
     _loadComments(); // Load comments when the page initializes
   }
 
+  // Update the _loadComments method in ThreadDetailPage
   Future<void> _loadComments() async {
-    List<Comment> comments = await _commentService.getCommentsForThread(_thread.id);
+    List<Comment> comments = await _commentService.getCommentsForThread(_thread.id, widget.userId);
     _comments = comments;
 
     // Fetch usernames for each comment
@@ -52,25 +53,6 @@ class _ThreadDetailPageState extends State<ThreadDetailPage> {
         _usernames[comment.userId] = username; // Store username in the map
       }
     }
-
-    // Sort comments to prioritize the user's comments
-    _comments.sort((a, b) {
-      // Check if a or b is the current user's comment
-      bool aIsCurrentUser = a.userId == widget.userId;
-      bool bIsCurrentUser = b.userId == widget.userId;
-
-      // If both are from the current user, keep their original order
-      if (aIsCurrentUser && bIsCurrentUser) return 0;
-
-      // If a is from the current user, it should come first
-      if (aIsCurrentUser) return -1;
-
-      // If b is from the current user, it should come first
-      if (bIsCurrentUser) return 1;
-
-      // If neither is from the current user, maintain original order
-      return 0;
-    });
 
     setState(() {}); // Update the UI
   }
