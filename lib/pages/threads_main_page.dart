@@ -71,7 +71,12 @@ class _ThreadsMainPageState extends State<ThreadsMainPage> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => ThreadDetailPage(thread: thread, user: user),
+        builder: (context) => ThreadDetailPage(
+          thread: thread,
+          username: widget.username, // Pass connected user's username
+          role: widget.role,         // Pass connected user's role
+          userId: widget.userId,     // Pass connected user's ID
+        ),
       ),
     );
   }

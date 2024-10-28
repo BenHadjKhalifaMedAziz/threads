@@ -83,27 +83,33 @@ class ThreadService {
       DocumentSnapshot snapshot = await transaction.get(threadDoc);
       if (!snapshot.exists) return;
 
+      // Deserialize the thread from Firestore
       Thread thread = Thread.fromMap(snapshot.data() as Map<String, dynamic>, snapshot.id);
 
+      // Initialize the likedUsers list and number of likes
       List<String> likedUsers = List<String>.from(thread.likedUsers);
       int nbLikes = thread.nbLikes;
 
+      // Check if the user has already liked the thread
       if (likedUsers.contains(userId)) {
-        // Unlike
+        // User wants to unlike
         likedUsers.remove(userId);
-        nbLikes -= 1;
+        nbLikes -= 1;  // Decrease like count
       } else {
-        // Like
+        // User wants to like
         likedUsers.add(userId);
-        nbLikes += 1;
+        nbLikes += 1;  // Increase like count
       }
 
+      // Update the thread document in Firestore
       transaction.update(threadDoc, {
         'likedUsers': likedUsers,
         'nbLikes': nbLikes,
       });
     });
   }
+
+
 
 
 }

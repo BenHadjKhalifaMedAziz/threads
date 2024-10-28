@@ -1,17 +1,19 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:threads/model/thread.dart';
-import 'package:threads/model/user.dart';
 import 'package:threads/services/thread_service.dart';
 
 class ThreadDetailPage extends StatefulWidget {
   final Thread thread;
-  final User user;
+  final String username; // Currently logged-in user's username
+  final String role;     // Currently logged-in user's role
+  final String userId;   // Currently logged-in user's ID
 
   const ThreadDetailPage({
     Key? key,
     required this.thread,
-    required this.user,
+    required this.username,
+    required this.role,
+    required this.userId,
   }) : super(key: key);
 
   @override
@@ -29,81 +31,67 @@ class _ThreadDetailPageState extends State<ThreadDetailPage> {
   }
 
   Future<void> _toggleLike() async {
-    await _threadService.toggleLike(_thread.id, widget.user.id);
+    await _threadService.toggleLike(_thread.id, widget.userId); // Call the existing toggleLike method
 
-    // Refresh the thread details after toggling
-    DocumentSnapshot updatedThreadDoc = await FirebaseFirestore.instance
-        .collection('threads')
-        .doc(_thread.id)
-        .get();
-    setState(() {
-      _thread = Thread.fromMap(
-          updatedThreadDoc.data() as Map<String, dynamic>, _thread.id);
-    });
+    // Reload the thread to get updated likes
+    final updatedThread = await _threadService.getThread(_thread.id);
+    if (updatedThread != null) {
+      setState(() {
+        _thread = updatedThread; // Update the local thread object with new data
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    bool userLiked = _thread.likedUsers.contains(widget.user.id);
-
     return Scaffold(
       appBar: AppBar(
-        title: Text(_thread.title),
+        title: Text(_thread.title), // Display thread title in the app bar
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Created by: ${widget.user.name} (${widget.user.role})',
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
+            Text('Created by: ${_thread.userId}'), // Display creator ID
             const SizedBox(height: 10),
-            Text(
-              'Likes: ${_thread.nbLikes}',
-              style: const TextStyle(fontSize: 16),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              _thread.text,
-              style: const TextStyle(fontSize: 16),
-            ),
-            const SizedBox(height: 20),
-            if (_thread.images.isNotEmpty) ...[
-              const Text(
-                'Images:',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            Text(_thread.text),
+            const SizedBox(height: 10),
+            // Display images if available
+            if (_thread.images.isNotEmpty)
+              Column(
+                children: _thread.images.map((url) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4.0),
+                    child: Image.network(url),
+                  );
+                }).toList(),
               ),
-              const SizedBox(height: 10),
-              SizedBox(
-                height: 200,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: _thread.images.length,
-                  itemBuilder: (context, index) {
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8.0),
-                      child: Image.network(
-                        _thread.images[index],
-                        width: 150,
-                        height: 150,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => const Icon(Icons.error),
-                      ),
-                    );
-                  },
+            const SizedBox(height: 10),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('${_thread.nbLikes} Likes'),
+                IconButton(
+                  icon: Icon(
+                    _thread.likedUsers.contains(widget.userId)
+                        ? Icons.favorite
+                        : Icons.favorite_border,
+                    color: _thread.likedUsers.contains(widget.userId)
+                        ? Colors.red
+                        : null,
+                  ),
+                  onPressed: _toggleLike,
                 ),
-              ),
-            ],
-            const SizedBox(height: 20),
-            ElevatedButton.icon(
-              onPressed: _toggleLike,
-              icon: Icon(userLiked ? Icons.thumb_up : Icons.thumb_up_outlined),
-              label: Text(userLiked ? 'Unlike' : 'Like'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: userLiked ? Colors.red : Colors.blue,
-              ),
+              ],
+            ),
+            const SizedBox(height: 20), // Spacer before the connected user info
+            Divider(), // Optional divider for better layout
+            const SizedBox(height: 10), // Spacer
+            // Display connected user details at the bottom
+            Text(
+              'User ID: ${widget.userId}', // Display connected user's ID
+              style: TextStyle(fontWeight: FontWeight.bold),
             ),
           ],
         ),
