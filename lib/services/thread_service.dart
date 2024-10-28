@@ -76,4 +76,34 @@ class ThreadService {
   }
 
 
+  Future<void> toggleLike(String threadId, String userId) async {
+    DocumentReference threadDoc = _firestore.collection(collection).doc(threadId);
+
+    await _firestore.runTransaction((transaction) async {
+      DocumentSnapshot snapshot = await transaction.get(threadDoc);
+      if (!snapshot.exists) return;
+
+      Thread thread = Thread.fromMap(snapshot.data() as Map<String, dynamic>, snapshot.id);
+
+      List<String> likedUsers = List<String>.from(thread.likedUsers);
+      int nbLikes = thread.nbLikes;
+
+      if (likedUsers.contains(userId)) {
+        // Unlike
+        likedUsers.remove(userId);
+        nbLikes -= 1;
+      } else {
+        // Like
+        likedUsers.add(userId);
+        nbLikes += 1;
+      }
+
+      transaction.update(threadDoc, {
+        'likedUsers': likedUsers,
+        'nbLikes': nbLikes,
+      });
+    });
+  }
+
+
 }

@@ -4,6 +4,7 @@ import 'package:threads/services/user_service.dart';
 import 'package:threads/model/thread.dart';
 import 'package:threads/model/user.dart';
 import 'create_thread_page.dart';
+import 'thread_detail_page.dart'; // Import the new page
 
 class ThreadsMainPage extends StatefulWidget {
   final String username;
@@ -40,12 +41,6 @@ class _ThreadsMainPageState extends State<ThreadsMainPage> {
       Thread thread = threadData['thread'];
       User? user = await _userService.fetchUserById(thread.userId);
 
-      if (user != null) {
-        print('Found User: ${user.name}, Role: ${user.role}');
-      } else {
-        print('User not found for ID: ${thread.userId}');
-      }
-
       _threadsWithUsers.add({
         'thread': thread,
         'user': user,
@@ -70,6 +65,15 @@ class _ThreadsMainPageState extends State<ThreadsMainPage> {
     if (result == true) {
       _loadThreads(); // Reload threads if a new thread was added
     }
+  }
+
+  void _viewThreadDetails(Thread thread, User user) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ThreadDetailPage(thread: thread, user: user),
+      ),
+    );
   }
 
   @override
@@ -102,7 +106,9 @@ class _ThreadsMainPageState extends State<ThreadsMainPage> {
             subtitle: Text('Created by: ${user?.name ?? "Unknown"} (${user?.role ?? "No Role"})'),
             trailing: Text('${thread.nbLikes} Likes'),
             onTap: () {
-              // Handle tap events for each thread, if needed
+              if (user != null) {
+                _viewThreadDetails(thread, user); // Open details page if user is not null
+              }
             },
           );
         },

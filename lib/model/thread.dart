@@ -1,18 +1,20 @@
 class Thread {
-  final String id; // Unique identifier for the thread
+  final String id;
   final String title;
   final String text;
   final String userId;
-  final List<String> images; // For image URLs
-  final int nbLikes; // Number of likes
+  final List<String> images;
+  final int nbLikes;
+  final List<String> likedUsers;
 
   Thread({
-    required this.id, // Make sure id is included in the constructor
+    required this.id,
     required this.title,
     required this.text,
     required this.userId,
     required this.images,
-    this.nbLikes = 0, // Default to 0 if not specified
+    this.nbLikes = 0,
+    this.likedUsers = const [], // Default to an empty list if not specified
   });
 
   // Convert Firestore data to a Thread instance
@@ -24,6 +26,7 @@ class Thread {
       userId: data['userId'] ?? '',
       images: List<String>.from(data['images'] ?? []),
       nbLikes: data['nbLikes'] ?? 0,
+      likedUsers: List<String>.from(data['likedUsers'] ?? []),
     );
   }
 
@@ -34,7 +37,8 @@ class Thread {
       'text': text,
       'userId': userId,
       'images': images,
-      'nbLikes': nbLikes, // Add nbLikes here
+      'nbLikes': nbLikes,
+      'likedUsers': likedUsers,
     };
   }
 }
