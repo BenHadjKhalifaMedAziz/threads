@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'threads_main_page.dart';  // Import ThreadsMainPage
-import 'package:threads/model/User.dart';
+import 'package:threads/model/user.dart'; // Ensure this import is correct
 import 'package:threads/services/user_service.dart'; // Import UserService
 
 class LoginPage extends StatefulWidget {
@@ -24,11 +23,15 @@ class _LoginPageState extends State<LoginPage> {
     User? user = await _userService.fetchUserByUsername(username);
 
     if (user != null) {
-      // User exists, navigate to ThreadsMainPage
+      // User exists, navigate to ThreadsMainPage with userId
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => ThreadsMainPage(username: user.name, role: user.role),
+          builder: (context) => ThreadsMainPage(
+            username: user.name,
+            role: user.role,
+            userId: user.id, // Pass the user ID
+          ),
         ),
       );
     } else {

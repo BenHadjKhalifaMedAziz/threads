@@ -1,28 +1,28 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:threads/model/User.dart';
+import 'package:threads/model/user.dart';
 
 class UserService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // Function to fetch user data by username
+  // Fetch a user by username
   Future<User?> fetchUserByUsername(String username) async {
-    QuerySnapshot query = await _firestore
-        .collection('users')
+    QuerySnapshot querySnapshot = await _firestore.collection('users')
         .where('name', isEqualTo: username)
         .get();
 
-    if (query.docs.isNotEmpty) {
-      var userDoc = query.docs.first;
-      return User.fromFirestore(userDoc);
+    if (querySnapshot.docs.isNotEmpty) {
+      return User.fromFirestore(querySnapshot.docs.first);
     }
-    return null; // Return null if the user is not found
+    return null;
   }
 
-  // Function to create a new user
-  Future<void> createUser(String username, String role) async {
-    await _firestore.collection('users').add({
-      'name': username,
-      'role': role,
-    });
+  // Fetch a user by ID
+  Future<User?> fetchUserById(String id) async {
+    DocumentSnapshot doc = await _firestore.collection('users').doc(id).get();
+
+    if (doc.exists) {
+      return User.fromFirestore(doc);
+    }
+    return null;
   }
 }

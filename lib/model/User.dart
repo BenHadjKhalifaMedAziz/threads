@@ -1,19 +1,30 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
+import 'package:cloud_firestore/cloud_firestore.dart'; // Make sure this line is present
 class User {
-  String id;
-  String name;
-  String role;
+  final String id;
+  final String name;
+  final String role;
 
-  User({required this.id, required this.name, required this.role});
+  User({
+    required this.id,
+    required this.name,
+    required this.role,
+  });
 
-  // Factory method to create a User from a Firestore document
+  // Factory constructor to create a User from Firestore DocumentSnapshot
   factory User.fromFirestore(DocumentSnapshot doc) {
-    Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+    final data = doc.data() as Map<String, dynamic>;
     return User(
-      id: doc.id,
-      name: data['name'],
-      role: data['role'],
+      id: doc.id, // Use the document ID
+      name: data['name'] ?? '',
+      role: data['role'] ?? 'User', // Default role if not specified
     );
+  }
+
+  // Convert User instance to a Map for Firestore
+  Map<String, dynamic> toMap() {
+    return {
+      'name': name,
+      'role': role,
+    };
   }
 }

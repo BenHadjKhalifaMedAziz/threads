@@ -1,16 +1,17 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:threads/model/thread.dart';
+import 'package:threads/model/user.dart';
+import 'user_service.dart'; // Import UserService to fetch user data
 
 class ThreadService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final String collection = 'threads'; // Name of the Firestore collection
+  final UserService _userService = UserService(); // Instantiate UserService
 
   // Create a new thread
   Future<void> createThread(Thread thread) async {
     try {
-      // If id is not provided, let Firestore auto-generate it
       DocumentReference docRef = await _firestore.collection(collection).add(thread.toMap());
-      // Optionally, update the thread with the generated ID
       await docRef.update({'id': docRef.id});
     } catch (e) {
       print("Error creating thread: $e");
@@ -22,7 +23,7 @@ class ThreadService {
     try {
       DocumentSnapshot doc = await _firestore.collection(collection).doc(id).get();
       if (doc.exists) {
-        return Thread.fromMap(doc.data() as Map<String, dynamic>, id); // Pass id to fromMap
+        return Thread.fromMap(doc.data() as Map<String, dynamic>, id);
       }
     } catch (e) {
       print("Error getting thread: $e");
@@ -48,17 +49,31 @@ class ThreadService {
     }
   }
 
-  // Get all threads
-  Future<List<Thread>> getAllThreads() async {
-    List<Thread> threads = [];
+  // Get all threads along with the user information
+  Future<List<Map<String, dynamic>>> getAllThreadsWithUser() async {
+    List<Map<String, dynamic>> threadsWithUsers = [];
     try {
       QuerySnapshot querySnapshot = await _firestore.collection(collection).get();
+
       for (var doc in querySnapshot.docs) {
-        threads.add(Thread.fromMap(doc.data() as Map<String, dynamic>, doc.id)); // Pass id to fromMap
+        Thread thread = Thread.fromMap(doc.data() as Map<String, dynamic>, doc.id);
+
+        // Fetch user by userId associated with the thread
+        User? user = await _userService.fetchUserById(thread.userId);
+
+        // Check if the user exists
+        if (user != null) {
+          threadsWithUsers.add({'thread': thread, 'user': user}); // Combine thread and user data
+        } else {
+          print("User not found for thread ID: ${thread.id}, userId: ${thread.userId}");
+          threadsWithUsers.add({'thread': thread, 'user': null}); // Add thread with null user
+        }
       }
     } catch (e) {
-      print("Error getting threads: $e");
+      print("Error getting threads with users: $e");
     }
-    return threads;
+    return threadsWithUsers;
   }
+
+
 }

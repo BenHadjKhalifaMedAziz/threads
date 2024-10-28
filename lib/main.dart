@@ -1,7 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:threads/firebase_options.dart';
-import 'package:threads/pages/Login_Page.dart'; // Ensure the import matches the filename
+import 'package:threads/pages/login_page.dart'; // Ensure the import matches the filename
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

@@ -28,7 +28,7 @@ class _CreateThreadPageState extends State<CreateThreadPage> {
         title: title,
         text: text,
         images: images,
-        userId: widget.userId,
+        userId: widget.userId, // Use the actual userId
         nbLikes: 0, // Default number of likes
       );
 

@@ -1,119 +1,112 @@
 import 'package:flutter/material.dart';
-import 'create_thread_page.dart'; // Import the new page
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:threads/model/thread.dart'; // Ensure your Thread model is defined
-import 'thread_detail_page.dart'; // Import the detail page
+import 'package:threads/services/thread_service.dart';
+import 'package:threads/services/user_service.dart';
+import 'package:threads/model/thread.dart';
+import 'package:threads/model/user.dart';
+import 'create_thread_page.dart'; // Import the CreateThreadPage
 
 class ThreadsMainPage extends StatefulWidget {
   final String username;
   final String role;
+  final String userId; // Add userId field
 
-  const ThreadsMainPage({Key? key, required this.username, required this.role}) : super(key: key);
+  const ThreadsMainPage({
+    Key? key,
+    required this.username,
+    required this.role,
+    required this.userId, // Update constructor to accept userId
+  }) : super(key: key);
 
   @override
   _ThreadsMainPageState createState() => _ThreadsMainPageState();
 }
 
 class _ThreadsMainPageState extends State<ThreadsMainPage> {
-  // Fetch threads from Firestore
-  Stream<List<Thread>> _fetchThreads() {
-    return FirebaseFirestore.instance
-        .collection('threads') // Replace with your Firestore collection name
-        .snapshots()
-        .map((snapshot) => snapshot.docs
-        .map((doc) => Thread.fromMap(doc.data(), doc.id)) // Ensure your Thread model has a fromMap method
-        .toList());
+  final ThreadService _threadService = ThreadService();
+  final UserService _userService = UserService();
+  List<Map<String, dynamic>> _threadsWithUsers = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadThreads();
   }
 
-  void _logout(BuildContext context) {
-    // Add your logout logic here (e.g., navigating back to the login page)
+  // Load threads with user information
+  Future<void> _loadThreads() async {
+    List<Map<String, dynamic>> threads = await _threadService.getAllThreadsWithUser();
+
+    for (var threadData in threads) {
+      Thread thread = threadData['thread'];
+      // Fetch user information based on userId
+      User? user = await _userService.fetchUserById(thread.userId);
+
+      // Log user information for debugging
+      if (user != null) {
+        print('Found User: ${user.name}, Role: ${user.role}');
+      } else {
+        print('User not found for ID: ${thread.userId}');
+      }
+
+      // Add thread and user to the list
+      _threadsWithUsers.add({
+        'thread': thread,
+        'user': user,
+      });
+    }
+
+    setState(() {});
+  }
+
+  // Navigate back to the login page
+  void _disconnect() {
     Navigator.pop(context);
+  }
+
+  // Navigate to CreateThreadPage
+  void _createThread() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CreateThreadPage(userId: widget.userId), // Pass userId to CreateThreadPage
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
-              children: [
-                Text(
-                  widget.username,
-                  style: const TextStyle(
-                    fontSize: 24,
-                    color: Colors.black,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  widget.role,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    color: Colors.blue,
-                  ),
-                ),
-              ],
-            ),
-            ElevatedButton(
-              onPressed: () => _logout(context),
-              child: const Text('Disconnect'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                foregroundColor: Colors.white,
-              ),
-            ),
-          ],
-        ),
-        backgroundColor: Colors.white,
-        elevation: 0,
+        title: Text('Welcome ${widget.username} (${widget.role})'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: _disconnect,
+          ),
+          IconButton(
+            icon: const Icon(Icons.add), // Button to create a thread
+            onPressed: _createThread,
+          ),
+        ],
       ),
-      body: StreamBuilder<List<Thread>>(
-        stream: _fetchThreads(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: Text('No threads available.'));
-          }
+      body: _threadsWithUsers.isEmpty
+          ? const Center(child: CircularProgressIndicator())
+          : ListView.builder(
+        itemCount: _threadsWithUsers.length,
+        itemBuilder: (context, index) {
+          final threadData = _threadsWithUsers[index];
+          final Thread thread = threadData['thread'];
+          final User? user = threadData['user'];
 
-          final threads = snapshot.data!;
-
-          return ListView.builder(
-            itemCount: threads.length,
-            itemBuilder: (context, index) {
-              final thread = threads[index];
-              return ListTile(
-                title: Text(thread.title),
-                subtitle: Text('Created by: ${thread.userId} | Likes: ${thread.nbLikes}'),
-                onTap: () {
-                  // Navigate to the thread detail page
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ThreadDetailPage(thread: thread), // Pass the selected thread
-                    ),
-                  );
-                },
-              );
+          return ListTile(
+            title: Text(thread.title),
+            subtitle: Text('Created by: ${user?.name ?? "Unknown"} (${user?.role ?? "No Role"})'),
+            trailing: Text('${thread.nbLikes} Likes'),
+            onTap: () {
+              // Optionally handle tap events for each thread
             },
           );
         },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => CreateThreadPage(userId: widget.username),
-            ),
-          );
-        },
-        child: const Icon(Icons.add),
       ),
     );
   }
