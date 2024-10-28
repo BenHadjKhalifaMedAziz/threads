@@ -3,7 +3,7 @@ import 'package:threads/model/thread.dart';
 import 'package:threads/model/comment.dart';
 import 'package:threads/services/thread_service.dart';
 import 'package:threads/services/comment_service.dart';
-import 'package:threads/services/user_service.dart'; // Import UserService
+import 'package:threads/services/user_service.dart';
 
 class ThreadDetailPage extends StatefulWidget {
   final Thread thread;
@@ -27,10 +27,12 @@ class _ThreadDetailPageState extends State<ThreadDetailPage> {
   late Thread _thread;
   final ThreadService _threadService = ThreadService();
   final CommentService _commentService = CommentService();
-  final UserService _userService = UserService(); // Initialize UserService
+  final UserService _userService = UserService();
   final TextEditingController _commentController = TextEditingController();
   List<Comment> _comments = [];
   Map<String, String> _usernames = {}; // Map to store userId to username
+  String? _editingCommentId; // Track the comment being edited
+  String _editingText = ''; // Text for the editing comment
 
   @override
   void initState() {
@@ -78,6 +80,36 @@ class _ThreadDetailPageState extends State<ThreadDetailPage> {
       await _commentService.createComment(newComment);
       _commentController.clear(); // Clear the text field
       _loadComments(); // Reload comments after adding
+    }
+  }
+
+  Future<void> _deleteComment(String commentId) async {
+    await _commentService.deleteComment(commentId); // Call the delete method
+    _loadComments(); // Reload comments after deletion
+  }
+
+  void _editComment(String commentId, String currentText) {
+    setState(() {
+      _editingCommentId = commentId; // Set the comment ID to edit
+      _editingText = currentText; // Set the current text for editing
+    });
+    _commentController.text = currentText; // Populate the text field with current text
+  }
+
+  Future<void> _updateComment() async {
+    if (_editingCommentId != null && _commentController.text.isNotEmpty) {
+      final updatedComment = Comment(
+        id: _editingCommentId!,
+        text: _commentController.text,
+        userId: widget.userId,
+        threadId: _thread.id,
+      );
+
+      await _commentService.updateComment(updatedComment); // Update the comment
+      _commentController.clear(); // Clear the text field
+      _editingCommentId = null; // Reset the editing comment ID
+      _editingText = ''; // Reset the editing text
+      _loadComments(); // Reload comments after updating
     }
   }
 
@@ -138,7 +170,25 @@ class _ThreadDetailPageState extends State<ThreadDetailPage> {
                   final comment = _comments[index];
                   return ListTile(
                     title: Text(comment.text),
-                    subtitle: Text('By: ${_usernames[comment.userId] ?? comment.userId}'), // Display username instead of userId
+                    subtitle: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('By: ${_usernames[comment.userId] ?? comment.userId}'), // Display username instead of userId
+                        if (comment.userId == widget.userId) // Check if the current user is the comment author
+                          Row(
+                            children: [
+                              IconButton(
+                                icon: Icon(Icons.edit, color: Colors.blue),
+                                onPressed: () => _editComment(comment.id, comment.text),
+                              ),
+                              IconButton(
+                                icon: Icon(Icons.delete, color: Colors.red),
+                                onPressed: () => _deleteComment(comment.id),
+                              ),
+                            ],
+                          ),
+                      ],
+                    ),
                   );
                 },
               ),
@@ -158,7 +208,7 @@ class _ThreadDetailPageState extends State<ThreadDetailPage> {
                 ),
                 IconButton(
                   icon: Icon(Icons.send),
-                  onPressed: _addComment,
+                  onPressed: _editingCommentId == null ? _addComment : _updateComment, // Update or add comment based on editing state
                 ),
               ],
             ),

@@ -39,4 +39,15 @@ class CommentService {
       print("Error deleting comment: $e");
     }
   }
+  // Update a comment
+  Future<void> updateComment(Comment comment) async {
+    await _firestore.collection('comments').doc(comment.id).update({
+      'text': comment.text,
+      // Add other fields to update if necessary
+    });
+  }
 }
+
+
+
+
